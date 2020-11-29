@@ -1,16 +1,16 @@
-version: "3.8"
+    version: "3.8"
 
-services:
-    container-mon:
-        container_name: container-mon
-        image: ghcr.io/rafhaanshah/container-mon:latest
-        restart: unless-stopped
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-        environment:
-            - CONTAINERMON_FAIL_LIMIT=1
-            - CONTAINERMON_CRON=*/5 * * * *
-            - CONTAINERMON_NOTIFICATION_URL=telegram://token@telegram?channels=channel-1
-            - CONTAINERMON_USE_LABELS=false
-            - CONTAINERMON_NOTIFY_HEALTHY=true
-            - CONTAINERMON_CHECK_STOPPED=true
+    services:
+        container-mon:
+            container_name: container-mon
+            image: ghcr.io/rafhaanshah/container-mon:latest
+            restart: unless-stopped
+            volumes:
+                - /var/run/docker.sock:/var/run/docker.sock
+            environment:
+                - CONTAINERMON_FAIL_LIMIT=1
+                - CONTAINERMON_CRON=*/5 * * * *
+                - CONTAINERMON_NOTIFICATION_URL=telegram://token@telegram?channels=channel-1
+                - CONTAINERMON_USE_LABELS=false
+                - CONTAINERMON_NOTIFY_HEALTHY=true
+                - CONTAINERMON_CHECK_STOPPED=true
