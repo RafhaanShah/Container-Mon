@@ -36,14 +36,14 @@ All configuration is done via environment variables, see the table below for all
   ```
   version: "3.8"
     services:
-    container-mon:
-    container_name: container-mon
-    image: ghcr.io/rafhaanshah/container-mon:latest
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - CONTAINERMON_NOTIFICATION_URL=telegram://token@telegram?channels=channel-1
+      container-mon:
+        container_name: container-mon
+        image: ghcr.io/rafhaanshah/container-mon:latest
+        restart: unless-stopped
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+        environment:
+          - CONTAINERMON_NOTIFICATION_URL=telegram://token@telegram?channels=channel-1
   ```
 
 ## Security Considerations
