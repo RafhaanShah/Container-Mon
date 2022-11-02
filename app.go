@@ -16,6 +16,7 @@ import (
 
 const (
 	containerLabel            = "containermon.enable"
+	senderSplitter            = "|"
 	envFailLimit              = "CONTAINERMON_FAIL_LIMIT"
 	envCronSchedule           = "CONTAINERMON_CRON"
 	envNotificationURL        = "CONTAINERMON_NOTIFICATION_URL"
@@ -213,8 +214,11 @@ func notify(notificationURL string, containerName string, healthy bool, messageP
 		msg = fmt.Sprintf("%vContainer %v is back to healthy", messagePrefix, containerName)
 	}
 
-	err := shoutrrr.Send(notificationURL, msg)
-	if err != nil {
-		fmt.Println(fmt.Sprintf("Error sending notification: %v", err))
+	senders := strings.Split(notificationURL, senderSplitter)
+	for i := range senders {
+		err := shoutrrr.Send(senders[i], msg)
+		if err != nil {
+			fmt.Println(fmt.Sprintf("Error sending notification: %v", err))
+		}
 	}
 }
