@@ -2,16 +2,17 @@
 # It then automatically uploads the results to GitHub so they can be displayed in the repository's security tab.
 #  https://github.com/github/codeql-action
 
-name: "Code Scanning"
+name: Code Scanning
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
-  CodeQL-Build:
+  codeql_analysis:
+    name: Code Scanning
     # CodeQL runs on ubuntu-latest, windows-latest, and macos-latest
     runs-on: ubuntu-latest
 
