@@ -6,23 +6,24 @@ Get notified when your [Docker](https://www.docker.com/) containers are unhealth
 ![](/assets/screenshot.jpg)
 
 ## Prerequisites
-- Have [Go](https://golang.org/) 1.17+ or [Docker](https://www.docker.com/) installed
+- Have [Go](https://golang.org/) 1.18+ or [Docker](https://www.docker.com/) installed
 - A notification service supported by [Shoutrrr](https://containrrr.dev/shoutrrr/services/overview/) and the required API keys or other configuration for your chosen service (e.g: Telegram, Discord, Slack, Teams etc)
 
 ## Configuration
 All configuration is done via environment variables, see the table below for all options and default values. Only `CONTAINERMON_NOTIFICATION_URL` is mandatory, all other fields are optional.
-| Name                            | Type   | Default Value         | Description                                                                                                                                         |
-|---------------------------------|--------|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| CONTAINERMON\_FAIL\_LIMIT       | Int    | 1                     | Number of consecutive 'unhealthy' checks to reach before sending a notification                                                                     |
-| CONTAINERMON\_CRON              | String | */5 * * * *           | Standard [Cron](https://crontab.guru/#*/5_*_*_*_*) schedule of when to run healthchecks                                                             |
-| CONTAINERMON\_NOTIFICATION\_URL | String | N/A                   | Notification URL for [Shoutrrr](https://containrrr\.dev/shoutrrr/services/overview/)                                                                |
-| CONTAINERMON\_USE\_LABELS       | Bool   | false                 | If `true` will only monitor containers with the label `containermon.enable=true` set                                                                |
-| CONTAINERMON\_NOTIFY\_HEALTHY   | Bool   | true                  | If `true` will send a notification when an 'unhealthy' container returns to being 'healthy'                                                         |
-| CONTAINERMON\_CHECK\_STOPPED    | Bool   | true                  | If `true` will consider `stopped` containers as 'unhealthy'\. If `false`, you will only be notified for containers that have a `healthcheck` set    |
-| DOCKER\_HOST                    | String | /var/run/docker\.sock | Path for the Docker API socket                                                                                                                      |
-| DOCKER\_API\_VERSION            | String | docker default        | Docker API version to use                                                                                                                           |
-| DOCKER\_CERT\_PATH              | String | docker default        | Path to load the TLS certificates from                                                                                                              |
-| DOCKER\_TLS\_VERIFY             | Bool   | false                 | Enable or disable TLS verification                                                                                                                  |
+| Name                            | Type   | Default Value         | Description                                                                                                                                                                  |
+|---------------------------------|--------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| CONTAINERMON\_FAIL\_LIMIT       | Int    | 1                     | Number of consecutive 'unhealthy' checks to reach before sending a notification                                                                                              |
+| CONTAINERMON\_CRON              | String | */5 * * * *           | Standard [Cron](https://crontab.guru/#*/5_*_*_*_*) schedule of when to run healthchecks                                                                                      |
+| CONTAINERMON\_NOTIFICATION\_URL | String | N/A                   | Notification URL for [Shoutrrr](https://containrrr\.dev/shoutrrr/services/overview/). Multiple services can be used with the '\|' character (without quotes) as a separator. |
+| CONTAINERMON\_USE\_LABELS       | Bool   | false                 | If `true` will only monitor containers with the label `containermon.enable=true` set                                                                                         |
+| CONTAINERMON\_NOTIFY\_HEALTHY   | Bool   | true                  | If `true` will send a notification when an 'unhealthy' container returns to being 'healthy'                                                                                  |
+| CONTAINERMON\_CHECK\_STOPPED    | Bool   | true                  | If `true` will consider `stopped` containers as 'unhealthy'\. If `false`, you will only be notified for containers that have a `healthcheck` set                             |
+| CONTAINERMON\_MESSAGE\_PREFIX   | String | N/A                   | Custom text to be prefixed to all notification messages.                                                                                                                     |
+| DOCKER\_HOST                    | String | /var/run/docker\.sock | Path for the Docker API socket                                                                                                                                               |
+| DOCKER\_API\_VERSION            | String | docker default        | Docker API version to use                                                                                                                                                    |
+| DOCKER\_CERT\_PATH              | String | docker default        | Path to load the TLS certificates from                                                                                                                                       |
+| DOCKER\_TLS\_VERIFY             | Bool   | false                 | Enable or disable TLS verification                                                                                                                                           |                                                                                                                 |
 
 ## Usage
 - Stand-alone:
