@@ -1,4 +1,5 @@
-name: Go
+# This workflow will build and test a Go application
+name: Build and Test
 
 on:
   push:
@@ -9,23 +10,18 @@ on:
 jobs:
 
   build:
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-
-    - uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+    - name: Checkout repo
+      uses: actions/checkout@v3
 
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: 1.18
+        check-latest: true
+        cache: true
 
     - name: Build
       run: go build -v app.go
