@@ -22,6 +22,7 @@ const (
 	envUseLabels              = "CONTAINERMON_USE_LABELS"
 	envNotifyWhenHealthy      = "CONTAINERMON_NOTIFY_HEALTHY"
 	envCheckStoppedContainers = "CONTAINERMON_CHECK_STOPPED"
+	envMessagePrefix          = "CONTAINERMON_MESSAGE_PREFIX"
 )
 
 type config struct {
@@ -31,6 +32,7 @@ type config struct {
 	useLabels              bool
 	notifyWhenHealthy      bool
 	checkStoppedContainers bool
+	messagePrefix          string
 }
 
 func main() {
@@ -79,7 +81,7 @@ func checkContainers(ctx context.Context, cli *client.Client, conf config, cMap 
 		if isHealthy(ctx, cli, c) {
 			// If it was previously unhealthy, notify that it is now healthy
 			if conf.notifyWhenHealthy && cMap[c.ID] < 0 {
-				notify(conf.notificationURL, c.Names[0], true)
+				notify(conf.notificationURL, c.Names[0], true, conf.messagePrefix)
 			}
 			cMap[c.ID] = 0
 		} else {
@@ -90,7 +92,7 @@ func checkContainers(ctx context.Context, cli *client.Client, conf config, cMap 
 				// If the fail count has reached the max count, send a notification and set the count to -1
 				if count >= conf.failLimit {
 					cMap[c.ID] = -1
-					notify(conf.notificationURL, c.Names[0], false)
+					notify(conf.notificationURL, c.Names[0], false, conf.messagePrefix)
 				}
 			}
 		}
@@ -150,6 +152,7 @@ func getConfig() config {
 		useLabels:              getEnvBool(envUseLabels, false),
 		notifyWhenHealthy:      getEnvBool(envNotifyWhenHealthy, true),
 		checkStoppedContainers: getEnvBool(envCheckStoppedContainers, true),
+		messagePrefix:          getEnv(envMessagePrefix, ""),
 	}
 
 	fmt.Println("Using config:")
@@ -159,6 +162,7 @@ func getConfig() config {
 	fmt.Println(fmt.Sprintf("  - use labels: %v", c.useLabels))
 	fmt.Println(fmt.Sprintf("  - notify when healthy: %v", c.notifyWhenHealthy))
 	fmt.Println(fmt.Sprintf("  - check stopped containers: %v", c.checkStoppedContainers))
+	fmt.Println(fmt.Sprintf("  - message prefix: %v", c.messagePrefix))
 
 	return c
 }
@@ -203,10 +207,10 @@ func getDockerClient() *client.Client {
 	return cli
 }
 
-func notify(notificationURL string, containerName string, healthy bool) {
-	msg := fmt.Sprintf("Container %v is not healthy", containerName)
+func notify(notificationURL string, containerName string, healthy bool, messagePrefix string) {
+	msg := fmt.Sprintf("%vContainer %v is not healthy", messagePrefix, containerName)
 	if healthy {
-		msg = fmt.Sprintf("Container %v is back to healthy", containerName)
+		msg = fmt.Sprintf("%vContainer %v is back to healthy", messagePrefix, containerName)
 	}
 
 	err := shoutrrr.Send(notificationURL, msg)
