@@ -148,12 +148,12 @@ func isHealthy(ctx context.Context, cli *client.Client, c types.Container) bool 
 func getConfig() config {
 	c := config{
 		failLimit:              getEnvInt(envFailLimit, 1),
-		cronSchedule:           getEnv(envCronSchedule, "*/5 * * * *"),
-		notificationURL:        getEnv(envNotificationURL, ""),
+		cronSchedule:           getEnv(envCronSchedule, "*/5 * * * *", true),
+		notificationURL:        getEnv(envNotificationURL, "", true),
 		useLabels:              getEnvBool(envUseLabels, false),
 		notifyWhenHealthy:      getEnvBool(envNotifyWhenHealthy, true),
 		checkStoppedContainers: getEnvBool(envCheckStoppedContainers, true),
-		messagePrefix:          getEnv(envMessagePrefix, ""),
+		messagePrefix:          getEnv(envMessagePrefix, "", false),
 	}
 
 	fmt.Println("Using config:")
@@ -190,9 +190,13 @@ func getEnvBool(key string, fallback bool) bool {
 	return fallback
 }
 
-func getEnv(key string, fallback string) string {
+func getEnv(key string, fallback string, trim bool) string {
 	if value, ok := os.LookupEnv(key); ok {
-		return strings.TrimSpace(value)
+		if(trim) {
+			return strings.TrimSpace(value)
+		} else {
+			return value
+		}
 	}
 
 	return fallback
