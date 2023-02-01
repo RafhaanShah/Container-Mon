@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/containrrr/shoutrrr v0.7.1
-	github.com/docker/docker v20.10.22+incompatible
+	github.com/docker/docker v20.10.23+incompatible
 	github.com/robfig/cron/v3 v3.0.1
 )
 
