@@ -15,7 +15,7 @@ All configuration is done via environment variables, see the table below for all
 |---------------------------------|--------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | CONTAINERMON\_FAIL\_LIMIT       | Int    | 1                     | Number of consecutive 'unhealthy' checks to reach before sending a notification                                                                                              |
 | CONTAINERMON\_CRON              | String | */5 * * * *           | Standard [Cron](https://crontab.guru/#*/5_*_*_*_*) schedule of when to run healthchecks                                                                                      |
-| CONTAINERMON\_NOTIFICATION\_URL | String | N/A                   | Notification URL for [Shoutrrr](https://containrrr\.dev/shoutrrr/services/overview/). Multiple services can be used with the '\|' character (without quotes) as a separator. |
+| CONTAINERMON\_NOTIFICATION\_URL | String | N/A                   | Notification URL for [Shoutrrr](https://containrrr\.dev/shoutrrr/services/overview/). Multiple services can be used with the `\|` (pipe) character as a separator. |
 | CONTAINERMON\_USE\_LABELS       | Bool   | false                 | If `true` will only monitor containers with the label `containermon.enable=true` set                                                                                         |
 | CONTAINERMON\_NOTIFY\_HEALTHY   | Bool   | true                  | If `true` will send a notification when an 'unhealthy' container returns to being 'healthy'                                                                                  |
 | CONTAINERMON\_CHECK\_STOPPED    | Bool   | true                  | If `true` will consider `stopped` containers as 'unhealthy'\. If `false`, you will only be notified for containers that have a `healthcheck` set                             |
@@ -50,7 +50,7 @@ All configuration is done via environment variables, see the table below for all
   ```
 
 ## Security Considerations
-- It can be considered a security risk to directly map your Docket socket inside a container. A proxy such as [Socket-Proxy](https://github.com/Tecnativa/docker-socket-prox) can be used to give fine-grained access to parts of the Docker API, this application only needs to be able to read a list of running containers ->
+- It can be considered a security risk to directly map your Docket socket inside a container. A proxy such as [Socket-Proxy](https://github.com/Tecnativa/docker-socket-proxy) can be used to give fine-grained access to parts of the Docker API, this application only needs to be able to read a list of running containers ->
   ```
 	docker run \
 	-e DOCKER_HOST=tcp://socket-proxy:2375
