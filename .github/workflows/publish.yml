@@ -18,8 +18,10 @@ jobs:
     
     steps:
     - name: Set version variable
-      id: vars
-      run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+      id: version
+      run: |
+        echo "tag=${GITHUB_REF#refs/*/}"
+        echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
       
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
@@ -41,7 +43,7 @@ jobs:
         platforms: linux/amd64,linux/arm64,linux/arm/v7
         push: true
         tags: |
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
     - name: Print image digest
