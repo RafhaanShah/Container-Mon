@@ -23,7 +23,7 @@ All configuration is done via environment variables, see the table below for all
 | DOCKER\_HOST                    | String | /var/run/docker\.sock | Path for the Docker API socket                                                                                                                                               |
 | DOCKER\_API\_VERSION            | String | docker default        | Docker API version to use                                                                                                                                                    |
 | DOCKER\_CERT\_PATH              | String | docker default        | Path to load the TLS certificates from                                                                                                                                       |
-| DOCKER\_TLS\_VERIFY             | Bool   | false                 | Enable or disable TLS verification                                                                                                                                           |                                                                                                                 |
+| DOCKER\_TLS\_VERIFY             | Bool   | false                 | Enable or disable TLS verification                                                                                                                                           |                                                |                                                                  |
 
 ## Usage
 - Stand-alone:
@@ -48,6 +48,10 @@ All configuration is done via environment variables, see the table below for all
         environment:
           - CONTAINERMON_NOTIFICATION_URL=telegram://token@telegram?channels=channel-1
   ```
+
+## Troubleshooting
+- Docker API version issues: if you get error messages like `client version 1.43 is too new. Maximum supported API version is 1.42` then please set the `DOCKER_API_VERSION` environment variable to the latest version supported by your Docker engine (e.g. `DOCKER_API_VERSION=1.42`, which you can check by running `docker version`.
+- Notifier issues: please check if your URL works with the Shoutrrr CLI from [here](https://containrrr.dev/shoutrrr/0.7/getting-started/#through_the_cli).
 
 ## Security Considerations
 - It can be considered a security risk to directly map your Docket socket inside a container. A proxy such as [Socket-Proxy](https://github.com/Tecnativa/docker-socket-proxy) can be used to give fine-grained access to parts of the Docker API, this application only needs to be able to read a list of running containers ->
