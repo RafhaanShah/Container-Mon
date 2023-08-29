@@ -219,7 +219,8 @@ func notify(notificationURL string, containerName string, healthy bool, messageP
 		msg = fmt.Sprintf("%vContainer %v is back to healthy", messagePrefix, containerName)
 	}
 
-	fmt.Println(fmt.Sprintf("%s | %s", time.Now().String(), msg))
+	currentTime := time.Now().Format(time.RFC3339)
+	fmt.Println(fmt.Sprintf("%s | %s", currentTime, msg))
 
 	senders := strings.Split(notificationURL, senderSplitter)
 	for i := range senders {
