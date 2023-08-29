@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/containrrr/shoutrrr"
 	"github.com/docker/docker/api/types"
@@ -192,7 +193,7 @@ func getEnvBool(key string, fallback bool) bool {
 
 func getEnv(key string, fallback string, trim bool) string {
 	if value, ok := os.LookupEnv(key); ok {
-		if(trim) {
+		if trim {
 			return strings.TrimSpace(value)
 		} else {
 			return value
@@ -217,6 +218,8 @@ func notify(notificationURL string, containerName string, healthy bool, messageP
 	if healthy {
 		msg = fmt.Sprintf("%vContainer %v is back to healthy", messagePrefix, containerName)
 	}
+
+	fmt.Println(fmt.Sprintf("%s | %s", time.Now().String(), msg))
 
 	senders := strings.Split(notificationURL, senderSplitter)
 	for i := range senders {
