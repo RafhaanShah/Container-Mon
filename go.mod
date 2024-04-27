@@ -1,6 +1,6 @@
 module github.com/rafhaanshah/container-mon
 
-go 1.18
+go 1.20
 
 require (
 	github.com/containrrr/shoutrrr v0.8.0
