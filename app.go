@@ -60,7 +60,7 @@ func main() {
 func checkContainers(ctx context.Context, cli *client.Client, conf config, cMap map[string]int) error {
 	// Get the list of containers
 	cList, err := getContainers(ctx, cli, conf.useLabels, conf.checkStoppedContainers)
-	fmt.Println(cList)
+
 	if err != nil {
 		return err
 	}
