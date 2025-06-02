@@ -10,6 +10,7 @@ import (
 
 	"github.com/containrrr/shoutrrr"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/robfig/cron/v3"
@@ -59,6 +60,7 @@ func main() {
 func checkContainers(ctx context.Context, cli *client.Client, conf config, cMap map[string]int) error {
 	// Get the list of containers
 	cList, err := getContainers(ctx, cli, conf.useLabels, conf.checkStoppedContainers)
+	fmt.Println(cList)
 	if err != nil {
 		return err
 	}
@@ -119,31 +121,47 @@ func getContainers(ctx context.Context, cli *client.Client, filterByLabel bool, 
 		args.Add("label", fmt.Sprintf("%v=true", containerLabel))
 	}
 
-	return cli.ContainerList(ctx, types.ContainerListOptions{
+	return cli.ContainerList(ctx, container.ListOptions{
 		All:     checkStoppedContainers,
 		Filters: args,
 	})
 }
 
 func isHealthy(ctx context.Context, cli *client.Client, c types.Container) bool {
-	running := c.State == "running"
+	// A container is considered healthy if it's running and its Docker healthcheck passes
+	// OR if it's stopped with an exit code of 0.
 
-	containerJSON, err := cli.ContainerInspect(ctx, c.ID)
-	if err != nil {
-		return running
+	// First, check if the container is running.
+	if c.State == "running" {
+		containerJSON, err := cli.ContainerInspect(ctx, c.ID)
+		if err != nil {
+			// If we can't inspect a running container, it might be in a bad state,
+			// so we'll treat it as unhealthy for now.
+			return false
+		}
+
+		// If there's no healthcheck or it's still starting, we consider it healthy if it's running.
+		health := containerJSON.State.Health
+		if health == nil || health.Status == types.NoHealthcheck || health.Status == types.Starting {
+			return true
+		}
+
+		// Otherwise, its health is determined by the Docker healthcheck status.
+		return health.Status == types.Healthy
+	} else if c.State == "exited" {
+		// If the container is stopped ("exited"), we need to inspect it to get the exit code.
+		containerJSON, err := cli.ContainerInspect(ctx, c.ID)
+		if err != nil {
+			// If we can't inspect an exited container, we can't determine its health definitively,
+			// so we'll treat it as unhealthy as a precaution.
+			return false
+		}
+		// A stopped container is considered healthy only if its exit code is 0.
+		return containerJSON.State.ExitCode == 0
 	}
 
-	health := containerJSON.State.Health
-	if health == nil {
-		return running
-	}
-
-	if health.Status == types.NoHealthcheck || health.Status == types.Starting {
-		return running
-	}
-
-	healthy := health.Status == types.Healthy
-	return healthy
+	// For any other container state (e.g., "created", "paused"), we consider it unhealthy.
+	return false
 }
 
 func getConfig() config {
