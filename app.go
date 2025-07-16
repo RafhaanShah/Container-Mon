@@ -26,6 +26,7 @@ const (
 	envNotifyWhenHealthy      = "CONTAINERMON_NOTIFY_HEALTHY"
 	envCheckStoppedContainers = "CONTAINERMON_CHECK_STOPPED"
 	envMessagePrefix          = "CONTAINERMON_MESSAGE_PREFIX"
+	envCheckContainerExitCode = "CONTAINERMON_CHECK_EXIT_CODE"
 )
 
 type config struct {
@@ -36,6 +37,7 @@ type config struct {
 	notifyWhenHealthy      bool
 	checkStoppedContainers bool
 	messagePrefix          string
+	checkContainerExitCode bool
 }
 
 func main() {
@@ -82,7 +84,7 @@ func checkContainers(ctx context.Context, cli *client.Client, conf config, cMap 
 	// Loop over the list of containers
 	for _, c := range cList {
 		// If the container is healthy, set the fail count to 0
-		if isHealthy(ctx, cli, c) {
+		if isHealthy(ctx, cli, c, conf) {
 			// If it was previously unhealthy, notify that it is now healthy
 			if conf.notifyWhenHealthy && cMap[c.ID] < 0 {
 				notify(conf.notificationURL, c.Names[0], true, conf.messagePrefix)
@@ -127,30 +129,12 @@ func getContainers(ctx context.Context, cli *client.Client, filterByLabel bool, 
 	})
 }
 
-func isHealthy(ctx context.Context, cli *client.Client, c types.Container) bool {
-	// A container is considered healthy if it's running and its Docker healthcheck passes
-	// OR if it's stopped with an exit code of 0.
-
-	// First, check if the container is running.
-	if c.State == "running" {
-		containerJSON, err := cli.ContainerInspect(ctx, c.ID)
-		if err != nil {
-			// If we can't inspect a running container, it might be in a bad state,
-			// so we'll treat it as unhealthy for now.
-			return false
-		}
-
-		// If there's no healthcheck or it's still starting, we consider it healthy if it's running.
-		health := containerJSON.State.Health
-		if health == nil || health.Status == types.NoHealthcheck || health.Status == types.Starting {
-			return true
-		}
-
-		// Otherwise, its health is determined by the Docker healthcheck status.
-		return health.Status == types.Healthy
-	} else if c.State == "exited" {
+func isHealthy(ctx context.Context, cli *client.Client, c types.Container, conf config) bool {
+	running := c.State == "running"
+	
+	containerJSON, err := cli.ContainerInspect(ctx, c.ID)
+	if conf.checkContainerExitCode && c.State == "exited" {
 		// If the container is stopped ("exited"), we need to inspect it to get the exit code.
-		containerJSON, err := cli.ContainerInspect(ctx, c.ID)
 		if err != nil {
 			// If we can't inspect an exited container, we can't determine its health definitively,
 			// so we'll treat it as unhealthy as a precaution.
@@ -158,10 +142,17 @@ func isHealthy(ctx context.Context, cli *client.Client, c types.Container) bool 
 		}
 		// A stopped container is considered healthy only if its exit code is 0.
 		return containerJSON.State.ExitCode == 0
+	} else if err != nil {
+		return running
 	}
 
-	// For any other container state (e.g., "created", "paused"), we consider it unhealthy.
-	return false
+	health := containerJSON.State.Health
+	if health == nil || health.Status == types.NoHealthcheck || health.Status == types.Starting {
+		return running
+	}
+
+	healthy := health.Status == types.Healthy
+	return healthy 	
 }
 
 func getConfig() config {
@@ -173,6 +164,7 @@ func getConfig() config {
 		notifyWhenHealthy:      getEnvBool(envNotifyWhenHealthy, true),
 		checkStoppedContainers: getEnvBool(envCheckStoppedContainers, true),
 		messagePrefix:          getEnv(envMessagePrefix, "", false),
+		checkContainerExitCode: getEnvBool(envCheckContainerExitCode, false),
 	}
 
 	fmt.Println("Using config:")
@@ -183,6 +175,7 @@ func getConfig() config {
 	fmt.Println(fmt.Sprintf("  - notify when healthy: %v", c.notifyWhenHealthy))
 	fmt.Println(fmt.Sprintf("  - check stopped containers: %v", c.checkStoppedContainers))
 	fmt.Println(fmt.Sprintf("  - message prefix: %v", c.messagePrefix))
+	fmt.Println(fmt.Sprintf("  - check container exit code: %v", c.checkContainerExitCode))
 
 	return c
 }
