@@ -131,7 +131,7 @@ func getContainers(ctx context.Context, cli *client.Client, filterByLabel bool, 
 
 func isHealthy(ctx context.Context, cli *client.Client, c types.Container, conf config) bool {
 	running := c.State == "running"
-	
+
 	containerJSON, err := cli.ContainerInspect(ctx, c.ID)
 	if conf.checkContainerExitCode && c.State == "exited" {
 		// If the container is stopped ("exited"), we need to inspect it to get the exit code.
@@ -152,7 +152,7 @@ func isHealthy(ctx context.Context, cli *client.Client, c types.Container, conf 
 	}
 
 	healthy := health.Status == types.Healthy
-	return healthy 	
+	return healthy
 }
 
 func getConfig() config {

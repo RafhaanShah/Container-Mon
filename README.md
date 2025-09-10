@@ -6,8 +6,17 @@ Get notified when your [Docker](https://www.docker.com/) containers are unhealth
 ![](/assets/screenshot.jpg)
 
 ## Prerequisites
-- Have [Go](https://golang.org/) 1.18+ or [Docker](https://www.docker.com/) installed
 - A notification service supported by [Shoutrrr](https://containrrr.dev/shoutrrr/services/overview/) and the required API keys or other configuration for your chosen service (e.g: Telegram, Discord, Slack, Teams etc)
+
+## Building
+Build the app:
+```
+go build
+```
+Format:
+```
+gofmt -w .
+```
 
 ## Configuration
 All configuration is done via environment variables, see the table below for all options and default values. Only `CONTAINERMON_NOTIFICATION_URL` is mandatory, all other fields are optional.
@@ -30,14 +39,14 @@ All configuration is done via environment variables, see the table below for all
 - Stand-alone:
 	`go run app.go`
 - Docker:
-  ```
-	docker run \
-	-v /var/run/docker.sock:/var/run/docker.sock \
-	-e CONTAINERMON_NOTIFICATION_URL=telegram://token@telegram?channels=channel-1 \
-	ghcr.io/rafhaanshah/container-mon:latest
+  ```shell
+  docker run \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -e CONTAINERMON_NOTIFICATION_URL=telegram://token@telegram?channels=channel-1 \
+    ghcr.io/rafhaanshah/container-mon:latest
   ```
 - Docker-Compose:
-  ```
+  ```yaml
   version: "3.8"
     services:
       container-mon:

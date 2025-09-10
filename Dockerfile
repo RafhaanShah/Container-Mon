@@ -1,15 +1,18 @@
 # Build the app
-FROM golang:1.24-alpine AS build
+# https://docs.docker.com/build/building/multi-platform/#cross-compiling-a-go-application
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS build
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /build
 COPY . .
-RUN go build app.go
+RUN RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o container-mon
 
 # Run the app
-FROM alpine:latest
+FROM alpine:3
 
-LABEL org.opencontainers.image.source https://github.com/RafhaanShah/Container-Mon
+LABEL org.opencontainers.image.source=https://github.com/RafhaanShah/Container-Mon
 
 WORKDIR /app
-COPY --from=build /build/app /app
-ENTRYPOINT ["./app"]
+COPY --from=build /build/container-mon /app
+ENTRYPOINT ["./container-mon"]

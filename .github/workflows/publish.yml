@@ -17,11 +17,18 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Set version variable
-      id: version
+      # checkout is NOT needed for docker/build-push-action
+    
+    - name: Set version variables
+      id: vars
       run: |
-        echo "tag=${GITHUB_REF#refs/*/}"
-        echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+        TAG=${GITHUB_REF#refs/*/}
+        MAJOR=$(echo $TAG | grep -oP '^v\d+')
+        MINOR=$(echo $TAG | grep -oP '^v\d+\.\d+')
+        PATCH=$TAG
+        echo "major=$MAJOR" >> $GITHUB_OUTPUT
+        echo "minor=$MINOR" >> $GITHUB_OUTPUT
+        echo "patch=$PATCH" >> $GITHUB_OUTPUT
       
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
@@ -42,8 +49,12 @@ jobs:
       with:
         platforms: linux/amd64,linux/arm64,linux/arm/v7
         push: true
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         tags: |
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.major }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.minor }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.patch }}
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
     - name: Print image digest
