@@ -10,6 +10,7 @@ import (
 
 	"github.com/containrrr/shoutrrr"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/robfig/cron/v3"
@@ -25,6 +26,7 @@ const (
 	envNotifyWhenHealthy      = "CONTAINERMON_NOTIFY_HEALTHY"
 	envCheckStoppedContainers = "CONTAINERMON_CHECK_STOPPED"
 	envMessagePrefix          = "CONTAINERMON_MESSAGE_PREFIX"
+	envCheckContainerExitCode = "CONTAINERMON_CHECK_EXIT_CODE"
 )
 
 type config struct {
@@ -35,6 +37,7 @@ type config struct {
 	notifyWhenHealthy      bool
 	checkStoppedContainers bool
 	messagePrefix          string
+	checkContainerExitCode bool
 }
 
 func main() {
@@ -59,6 +62,7 @@ func main() {
 func checkContainers(ctx context.Context, cli *client.Client, conf config, cMap map[string]int) error {
 	// Get the list of containers
 	cList, err := getContainers(ctx, cli, conf.useLabels, conf.checkStoppedContainers)
+
 	if err != nil {
 		return err
 	}
@@ -80,7 +84,7 @@ func checkContainers(ctx context.Context, cli *client.Client, conf config, cMap 
 	// Loop over the list of containers
 	for _, c := range cList {
 		// If the container is healthy, set the fail count to 0
-		if isHealthy(ctx, cli, c) {
+		if isHealthy(ctx, cli, c, conf) {
 			// If it was previously unhealthy, notify that it is now healthy
 			if conf.notifyWhenHealthy && cMap[c.ID] < 0 {
 				notify(conf.notificationURL, c.Names[0], true, conf.messagePrefix)
@@ -119,31 +123,36 @@ func getContainers(ctx context.Context, cli *client.Client, filterByLabel bool, 
 		args.Add("label", fmt.Sprintf("%v=true", containerLabel))
 	}
 
-	return cli.ContainerList(ctx, types.ContainerListOptions{
+	return cli.ContainerList(ctx, container.ListOptions{
 		All:     checkStoppedContainers,
 		Filters: args,
 	})
 }
 
-func isHealthy(ctx context.Context, cli *client.Client, c types.Container) bool {
+func isHealthy(ctx context.Context, cli *client.Client, c types.Container, conf config) bool {
 	running := c.State == "running"
-
+	
 	containerJSON, err := cli.ContainerInspect(ctx, c.ID)
-	if err != nil {
+	if conf.checkContainerExitCode && c.State == "exited" {
+		// If the container is stopped ("exited"), we need to inspect it to get the exit code.
+		if err != nil {
+			// If we can't inspect an exited container, we can't determine its health definitively,
+			// so we'll treat it as unhealthy as a precaution.
+			return false
+		}
+		// A stopped container is considered healthy only if its exit code is 0.
+		return containerJSON.State.ExitCode == 0
+	} else if err != nil {
 		return running
 	}
 
 	health := containerJSON.State.Health
-	if health == nil {
-		return running
-	}
-
-	if health.Status == types.NoHealthcheck || health.Status == types.Starting {
+	if health == nil || health.Status == types.NoHealthcheck || health.Status == types.Starting {
 		return running
 	}
 
 	healthy := health.Status == types.Healthy
-	return healthy
+	return healthy 	
 }
 
 func getConfig() config {
@@ -155,6 +164,7 @@ func getConfig() config {
 		notifyWhenHealthy:      getEnvBool(envNotifyWhenHealthy, true),
 		checkStoppedContainers: getEnvBool(envCheckStoppedContainers, true),
 		messagePrefix:          getEnv(envMessagePrefix, "", false),
+		checkContainerExitCode: getEnvBool(envCheckContainerExitCode, false),
 	}
 
 	fmt.Println("Using config:")
@@ -165,6 +175,7 @@ func getConfig() config {
 	fmt.Println(fmt.Sprintf("  - notify when healthy: %v", c.notifyWhenHealthy))
 	fmt.Println(fmt.Sprintf("  - check stopped containers: %v", c.checkStoppedContainers))
 	fmt.Println(fmt.Sprintf("  - message prefix: %v", c.messagePrefix))
+	fmt.Println(fmt.Sprintf("  - check container exit code: %v", c.checkContainerExitCode))
 
 	return c
 }

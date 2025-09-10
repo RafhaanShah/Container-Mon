@@ -1,5 +1,5 @@
 # Build the app
-FROM golang:1.18-alpine AS build
+FROM golang:1.24-alpine AS build
 
 WORKDIR /build
 COPY . .
@@ -11,5 +11,5 @@ FROM alpine:latest
 LABEL org.opencontainers.image.source https://github.com/RafhaanShah/Container-Mon
 
 WORKDIR /app
-COPY --from=build /build/app /app 
+COPY --from=build /build/app /app
 ENTRYPOINT ["./app"]
