@@ -22,6 +22,7 @@ const (
 	envFailLimit              = "CONTAINERMON_FAIL_LIMIT"
 	envCronSchedule           = "CONTAINERMON_CRON"
 	envNotificationURL        = "CONTAINERMON_NOTIFICATION_URL"
+	envHealthyNotificationURL = "CONTAINERMON_HEALTHY_NOTIFICATION_URL"
 	envUseLabels              = "CONTAINERMON_USE_LABELS"
 	envNotifyWhenHealthy      = "CONTAINERMON_NOTIFY_HEALTHY"
 	envCheckStoppedContainers = "CONTAINERMON_CHECK_STOPPED"
@@ -33,6 +34,7 @@ type config struct {
 	failLimit              int
 	cronSchedule           string
 	notificationURL        string
+	healthyNotificationURL string
 	useLabels              bool
 	notifyWhenHealthy      bool
 	checkStoppedContainers bool
@@ -87,7 +89,7 @@ func checkContainers(ctx context.Context, cli *client.Client, conf config, cMap 
 		if isHealthy(ctx, cli, c, conf) {
 			// If it was previously unhealthy, notify that it is now healthy
 			if conf.notifyWhenHealthy && cMap[c.ID] < 0 {
-				notify(conf.notificationURL, c.Names[0], true, conf.messagePrefix)
+				notify(conf, c.Names[0], true)
 			}
 			cMap[c.ID] = 0
 		} else {
@@ -98,7 +100,7 @@ func checkContainers(ctx context.Context, cli *client.Client, conf config, cMap 
 				// If the fail count has reached the max count, send a notification and set the count to -1
 				if count >= conf.failLimit {
 					cMap[c.ID] = -1
-					notify(conf.notificationURL, c.Names[0], false, conf.messagePrefix)
+					notify(conf, c.Names[0], false)
 				}
 			}
 		}
@@ -160,6 +162,7 @@ func getConfig() config {
 		failLimit:              getEnvInt(envFailLimit, 1),
 		cronSchedule:           getEnv(envCronSchedule, "*/5 * * * *", true),
 		notificationURL:        getEnv(envNotificationURL, "", true),
+		healthyNotificationURL: getEnv(envHealthyNotificationURL, "", true),
 		useLabels:              getEnvBool(envUseLabels, false),
 		notifyWhenHealthy:      getEnvBool(envNotifyWhenHealthy, true),
 		checkStoppedContainers: getEnvBool(envCheckStoppedContainers, true),
@@ -167,10 +170,16 @@ func getConfig() config {
 		checkContainerExitCode: getEnvBool(envCheckContainerExitCode, false),
 	}
 
+	// Fallback logic for healthy notification URL
+	if c.healthyNotificationURL == "" {
+		c.healthyNotificationURL = c.notificationURL
+	}
+
 	fmt.Println("Using config:")
 	fmt.Println(fmt.Sprintf("  - failure limit: %v", c.failLimit))
 	fmt.Println(fmt.Sprintf("  - cron schedule: %v", c.cronSchedule))
 	fmt.Println(fmt.Sprintf("  - notification service: %v", strings.Split(c.notificationURL, "://")[0]))
+	fmt.Println(fmt.Sprintf("  - healthy notification URL: %v", strings.Split(c.healthyNotificationURL, "://")[0]))
 	fmt.Println(fmt.Sprintf("  - use labels: %v", c.useLabels))
 	fmt.Println(fmt.Sprintf("  - notify when healthy: %v", c.notifyWhenHealthy))
 	fmt.Println(fmt.Sprintf("  - check stopped containers: %v", c.checkStoppedContainers))
@@ -224,16 +233,18 @@ func getDockerClient() *client.Client {
 	return cli
 }
 
-func notify(notificationURL string, containerName string, healthy bool, messagePrefix string) {
-	msg := fmt.Sprintf("%vContainer %v is not healthy", messagePrefix, containerName)
+func notify(conf config, containerName string, healthy bool) {
+	msg := fmt.Sprintf("%vContainer %v is not healthy", conf.messagePrefix, containerName)
+	url := conf.notificationURL
 	if healthy {
-		msg = fmt.Sprintf("%vContainer %v is back to healthy", messagePrefix, containerName)
+		msg = fmt.Sprintf("%vContainer %v is back to healthy", conf.messagePrefix, containerName)
+		url = conf.healthyNotificationURL
 	}
 
 	currentTime := time.Now().Format(time.RFC3339)
 	fmt.Println(fmt.Sprintf("%s | %s", currentTime, msg))
 
-	senders := strings.Split(notificationURL, senderSplitter)
+	senders := strings.Split(url, senderSplitter)
 	for i := range senders {
 		err := shoutrrr.Send(senders[i], msg)
 		if err != nil {

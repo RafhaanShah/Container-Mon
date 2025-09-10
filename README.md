@@ -15,7 +15,7 @@ go build
 ```
 Format:
 ```
-gofmt -w .
+gofmt -w -s .
 ```
 
 ## Configuration
