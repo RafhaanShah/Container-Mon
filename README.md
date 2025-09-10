@@ -6,7 +6,7 @@ Get notified when your [Docker](https://www.docker.com/) containers are unhealth
 ![](/assets/screenshot.jpg)
 
 ## Prerequisites
-- Have [Go](https://golang.org/) 1.18+ or [Docker](https://www.docker.com/) installed
+- Have [Go](https://golang.org/) or [Docker](https://www.docker.com/) installed
 - A notification service supported by [Shoutrrr](https://containrrr.dev/shoutrrr/services/overview/) and the required API keys or other configuration for your chosen service (e.g: Telegram, Discord, Slack, Teams etc)
 
 ## Configuration
