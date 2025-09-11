@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -54,7 +55,7 @@ func main() {
 	cr.AddFunc(conf.cronSchedule, func() {
 		err := checkContainers(ctx, cli, conf, cMap)
 		if err != nil {
-			fmt.Println(fmt.Sprintf("Error checking containers: %v", err))
+			fmt.Printf("Error checking containers: %v\n", err)
 		}
 	})
 
@@ -158,16 +159,28 @@ func isHealthy(ctx context.Context, cli *client.Client, c types.Container, conf 
 }
 
 func getConfig() config {
+	failLimitFlag := flag.Int("fail-limit", getEnvInt(envFailLimit, 1), "Number of consecutive 'unhealthy' checks before notification")
+	cronScheduleFlag := flag.String("cron", getEnv(envCronSchedule, "*/5 * * * *", true), "Cron schedule for healthchecks")
+	notificationURLFlag := flag.String("notification-url", getEnv(envNotificationURL, "", true), "Notification URL for Shoutrrr")
+	healthyNotificationURLFlag := flag.String("healthy-notification-url", getEnv(envHealthyNotificationURL, "", true), "Notification URL for healthy state")
+	useLabelsFlag := flag.Bool("use-labels", getEnvBool(envUseLabels, false), "Monitor only containers with containermon.enable=true label")
+	notifyWhenHealthyFlag := flag.Bool("notify-healthy", getEnvBool(envNotifyWhenHealthy, true), "Notify when unhealthy container returns to healthy")
+	checkStoppedContainersFlag := flag.Bool("check-stopped", getEnvBool(envCheckStoppedContainers, true), "Consider stopped containers as unhealthy")
+	messagePrefixFlag := flag.String("message-prefix", getEnv(envMessagePrefix, "", false), "Custom prefix for notification messages")
+	checkContainerExitCodeFlag := flag.Bool("check-exit-code", getEnvBool(envCheckContainerExitCode, false), "Only exited containers with non-zero exit code are unhealthy")
+
+	flag.Parse()
+
 	c := config{
-		failLimit:              getEnvInt(envFailLimit, 1),
-		cronSchedule:           getEnv(envCronSchedule, "*/5 * * * *", true),
-		notificationURL:        getEnv(envNotificationURL, "", true),
-		healthyNotificationURL: getEnv(envHealthyNotificationURL, "", true),
-		useLabels:              getEnvBool(envUseLabels, false),
-		notifyWhenHealthy:      getEnvBool(envNotifyWhenHealthy, true),
-		checkStoppedContainers: getEnvBool(envCheckStoppedContainers, true),
-		messagePrefix:          getEnv(envMessagePrefix, "", false),
-		checkContainerExitCode: getEnvBool(envCheckContainerExitCode, false),
+		failLimit:              *failLimitFlag,
+		cronSchedule:           *cronScheduleFlag,
+		notificationURL:        *notificationURLFlag,
+		healthyNotificationURL: *healthyNotificationURLFlag,
+		useLabels:              *useLabelsFlag,
+		notifyWhenHealthy:      *notifyWhenHealthyFlag,
+		checkStoppedContainers: *checkStoppedContainersFlag,
+		messagePrefix:          *messagePrefixFlag,
+		checkContainerExitCode: *checkContainerExitCodeFlag,
 	}
 
 	// Fallback logic for healthy notification URL
@@ -176,15 +189,15 @@ func getConfig() config {
 	}
 
 	fmt.Println("Using config:")
-	fmt.Println(fmt.Sprintf("  - failure limit: %v", c.failLimit))
-	fmt.Println(fmt.Sprintf("  - cron schedule: %v", c.cronSchedule))
-	fmt.Println(fmt.Sprintf("  - notification service: %v", strings.Split(c.notificationURL, "://")[0]))
-	fmt.Println(fmt.Sprintf("  - healthy notification URL: %v", strings.Split(c.healthyNotificationURL, "://")[0]))
-	fmt.Println(fmt.Sprintf("  - use labels: %v", c.useLabels))
-	fmt.Println(fmt.Sprintf("  - notify when healthy: %v", c.notifyWhenHealthy))
-	fmt.Println(fmt.Sprintf("  - check stopped containers: %v", c.checkStoppedContainers))
-	fmt.Println(fmt.Sprintf("  - message prefix: %v", c.messagePrefix))
-	fmt.Println(fmt.Sprintf("  - check container exit code: %v", c.checkContainerExitCode))
+	fmt.Printf("  - failure limit: %v\n", c.failLimit)
+	fmt.Printf("  - cron schedule: %v\n", c.cronSchedule)
+	fmt.Printf("  - notification service: %v\n", strings.Split(c.notificationURL, "://")[0])
+	fmt.Printf("  - healthy notification service: %v\n", strings.Split(c.healthyNotificationURL, "://")[0])
+	fmt.Printf("  - use labels: %v\n", c.useLabels)
+	fmt.Printf("  - notify when healthy: %v\n", c.notifyWhenHealthy)
+	fmt.Printf("  - check stopped containers: %v\n", c.checkStoppedContainers)
+	fmt.Printf("  - message prefix: %v\n", c.messagePrefix)
+	fmt.Printf("  - check container exit code: %v\n", c.checkContainerExitCode)
 
 	return c
 }
@@ -242,13 +255,13 @@ func notify(conf config, containerName string, healthy bool) {
 	}
 
 	currentTime := time.Now().Format(time.RFC3339)
-	fmt.Println(fmt.Sprintf("%s | %s", currentTime, msg))
+	fmt.Printf("%s | %s\n", currentTime, msg)
 
 	senders := strings.Split(url, senderSplitter)
 	for i := range senders {
 		err := shoutrrr.Send(senders[i], msg)
 		if err != nil {
-			fmt.Println(fmt.Sprintf("Error sending notification: %v", err))
+			fmt.Printf("Error sending notification: %v\n", err)
 		}
 	}
 }

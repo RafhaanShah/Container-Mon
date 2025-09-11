@@ -19,45 +19,54 @@ gofmt -w -s .
 ```
 
 ## Configuration
-All configuration is done via environment variables, see the table below for all options and default values. Only `CONTAINERMON_NOTIFICATION_URL` is mandatory, all other fields are optional.
-| Name                            | Type   | Default Value         | Description                                                                                                                                                                  |
-|---------------------------------|--------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| CONTAINERMON\_FAIL\_LIMIT       | Int    | 1                     | Number of consecutive 'unhealthy' checks to reach before sending a notification                                                                                              |
-| CONTAINERMON\_CRON              | String | */5 * * * *           | Standard [Cron](https://crontab.guru/#*/5_*_*_*_*) schedule of when to run healthchecks                                                                                      |
-| CONTAINERMON\_NOTIFICATION\_URL | String | N/A                   | Notification URL for [Shoutrrr](https://containrrr\.dev/shoutrrr/services/overview/). Multiple services can be used with the `\|` (pipe) character as a separator. |
-| CONTAINERMON\_USE\_LABELS       | Bool   | false                 | If `true` will only monitor containers with the label `containermon.enable=true` set                                                                                         |
-| CONTAINERMON\_NOTIFY\_HEALTHY   | Bool   | true                  | If `true` will send a notification when an 'unhealthy' container returns to being 'healthy'                                                                                  |
-| CONTAINERMON\_CHECK\_STOPPED    | Bool   | true                  | If `true` will consider `stopped` containers as 'unhealthy'\. If `false`, you will only be notified for containers that have a `healthcheck` set                             |
-| CONTAINERMON\_MESSAGE\_PREFIX   | String | N/A                   | Custom text to be prefixed to all notification messages.                                                                                                                     |
-| CONTAINERMON\_CHECK\_EXIT\_CODE | Bool   | false                 | When set to `true`, only exited containers with a non-zero exit code will be marked as unhealthy
-| DOCKER\_HOST                    | String | /var/run/docker\.sock | Path for the Docker API socket                                                                                                                                               |
-| DOCKER\_API\_VERSION            | String | docker default        | Docker API version to use                                                                                                                                                    |
-| DOCKER\_CERT\_PATH              | String | docker default        | Path to load the TLS certificates from                                                                                                                                       |
-| DOCKER\_TLS\_VERIFY             | Bool   | false                 | Enable or disable TLS verification                                                                                                                                           |                                                |                                                                  |
+Configuration can be set via **environment variables** or **command line flags**. Command line flags take precedence over environment variables. Only `CONTAINERMON_NOTIFICATION_URL` (or `--notification-url`) is mandatory; all other fields are optional.
+
+| Environment Variable                | Command Line Flag                | Type   | Default Value         | Description                                                                                                                                                                  |
+|-------------------------------------|----------------------------------|--------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| CONTAINERMON_FAIL_LIMIT             | --fail-limit                     | Int    | 1                     | Number of consecutive 'unhealthy' checks to reach before sending a notification                                                                                              |
+| CONTAINERMON_CRON                   | --cron                           | String | */5 * * * *           | Standard [Cron](https://crontab.guru/#*/5_*_*_*_*) schedule of when to run healthchecks                                                                                      |
+| CONTAINERMON_NOTIFICATION_URL       | --notification-url               | String | N/A                   | Notification URL for [Shoutrrr](https://containrrr.dev/shoutrrr/services/overview/). Multiple services can be used with the `|` (pipe) character as a separator.            |
+| CONTAINERMON_HEALTHY_NOTIFICATION_URL| --healthy-notification-url      | String | N/A                   | Notification URL for healthy state notifications                                                                                                                             |
+| CONTAINERMON_USE_LABELS             | --use-labels                     | Bool   | false                 | If `true`, only monitor containers with the label `containermon.enable=true` set                                                                                             |
+| CONTAINERMON_NOTIFY_HEALTHY         | --notify-healthy                 | Bool   | true                  | If `true`, send a notification when an 'unhealthy' container returns to being 'healthy'                                                                                      |
+| CONTAINERMON_CHECK_STOPPED          | --check-stopped                  | Bool   | true                  | If `true`, consider `stopped` containers as 'unhealthy'. If `false`, only containers with a `healthcheck` set are monitored                                                  |
+| CONTAINERMON_MESSAGE_PREFIX         | --message-prefix                 | String | N/A                   | Custom text to be prefixed to all notification messages.                                                                                                                     |
+| CONTAINERMON_CHECK_EXIT_CODE        | --check-exit-code                | Bool   | false                 | When set to `true`, only exited containers with a non-zero exit code will be marked as unhealthy                                                                             |
+| DOCKER_HOST                         |                                  | String | /var/run/docker.sock  | Path for the Docker API socket                                                                                                                                                |
+| DOCKER_API_VERSION                  |                                  | String | docker default        | Docker API version to use                                                                                                                                                    |
+| DOCKER_CERT_PATH                    |                                  | String | docker default        | Path to load the TLS certificates from                                                                                                                                       |
+| DOCKER_TLS_VERIFY                   |                                  | Bool   | false                 | Enable or disable TLS verification                                                                                                                                            |
 
 ## Usage
-- Stand-alone:
-	`go run app.go`
-- Docker:
-  ```shell
-  docker run \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -e CONTAINERMON_NOTIFICATION_URL=telegram://token@telegram?channels=channel-1 \
-    ghcr.io/rafhaanshah/container-mon:latest
-  ```
-- Docker-Compose:
-  ```yaml
-  version: "3.8"
-    services:
-      container-mon:
-        container_name: container-mon
-        image: ghcr.io/rafhaanshah/container-mon:latest
-        restart: unless-stopped
-        volumes:
-          - /var/run/docker.sock:/var/run/docker.sock
-        environment:
-          - CONTAINERMON_NOTIFICATION_URL=telegram://token@telegram?channels=channel-1
-  ```
+### Stand-alone
+
+```shell
+go run app.go --notification-url "telegram://token@telegram?channels=channel-1" --fail-limit=3 --cron="*/2 * * * *"
+```
+
+### Docker
+
+```shell
+docker run \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e CONTAINERMON_NOTIFICATION_URL=telegram://token@telegram?channels=channel-1 \
+  ghcr.io/rafhaanshah/container-mon:latest
+```
+
+### Docker-Compose
+
+```yaml
+version: "3.8"
+services:
+  container-mon:
+    container_name: container-mon
+    image: ghcr.io/rafhaanshah/container-mon:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - CONTAINERMON_NOTIFICATION_URL=telegram://token@telegram?channels=channel-1
+```
 
 ## Troubleshooting
 - Docker API version issues: if you get error messages like `client version 1.43 is too new. Maximum supported API version is 1.42` then please set the `DOCKER_API_VERSION` environment variable to the latest version supported by your Docker engine (e.g. `DOCKER_API_VERSION=1.42`, which you can check by running `docker version`.
