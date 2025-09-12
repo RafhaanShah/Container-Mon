@@ -59,3 +59,40 @@ jobs:
 
     - name: Print image digest
       run: echo ${{ steps.docker_build.outputs.digest }}
+
+  upload_executable:
+    name: Build and upload executable to release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+          - os: ubuntu-24.04-arm
+          - os: macos-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          check-latest: true
+          cache: true
+
+      - name: Build
+        run: go build
+
+      - name: Set artifact variables
+        id: artifact_vars
+        run: |
+          echo "os_lower=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          echo "arch_lower=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Upload artifacts
+        uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: app
+          asset_name: container-mon-${{ steps.artifact_vars.outputs.os_lower }}-${{ steps.artifact_vars.outputs.arch_lower }}

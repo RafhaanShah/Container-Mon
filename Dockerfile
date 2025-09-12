@@ -6,7 +6,7 @@ ARG TARGETARCH
 
 WORKDIR /build
 COPY . .
-RUN RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o container-mon
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o container-mon
 
 # Run the app
 FROM alpine:3
