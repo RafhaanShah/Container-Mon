@@ -22,6 +22,12 @@ Format:
 gofmt -w -s .
 ```
 
+## Installation
+
+- If you have `go` installed, you can clone the repository and directly run the `go` file
+- You can download the latest release artifact from [GitHub Releases](https://github.com/RafhaanShah/Container-Mon/releases)
+- If you have Docker installed, you can run the Docker image
+
 ## Configuration
 
 Configuration can be set via **environment variables** or **command line flags**. Command line flags take precedence over environment variables. Only `CONTAINERMON_NOTIFICATION_URL` (or `--notification-url`) is mandatory; all other fields are optional.
@@ -44,10 +50,16 @@ Configuration can be set via **environment variables** or **command line flags**
 
 ## Usage
 
-### Stand-alone
+### Go
 
 ```shell
-go run app.go --notification-url "telegram://token@telegram?channels=channel-1" --fail-limit=3 --cron="*/2 * * * *"
+go run app.go --notification-url "telegram://token@telegram?channels=channel-1" --fail-limit=1 --cron="*/2 * * * *"
+```
+
+### Executable
+
+```shell
+./container-mon --notification-url "telegram://token@telegram?channels=channel-1" --fail-limit=1 --cron="*/2 * * * *"
 ```
 
 ### Docker
@@ -62,7 +74,6 @@ docker run \
 ### Docker-Compose
 
 ```yaml
-version: "3.8"
 services:
   container-mon:
     container_name: container-mon

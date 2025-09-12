@@ -1,5 +1,3 @@
-    version: "3.8"
-
     services:
         container-mon:
             container_name: container-mon
