@@ -78,7 +78,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          check-latest: true
+          go-version-file: 'go.mod'
           cache: true
 
       - name: Build
@@ -94,5 +94,5 @@ jobs:
         uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: app
+          asset_path: container-mon
           asset_name: container-mon-${{ steps.artifact_vars.outputs.os_lower }}-${{ steps.artifact_vars.outputs.arch_lower }}
