@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/containrrr/shoutrrr"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
@@ -110,7 +109,7 @@ func checkContainers(ctx context.Context, cli *client.Client, conf config, cMap 
 	return nil
 }
 
-func containerInList(a string, list []types.Container) bool {
+func containerInList(a string, list []container.Summary) bool {
 	for _, b := range list {
 		if b.ID == a {
 			return true
@@ -120,7 +119,7 @@ func containerInList(a string, list []types.Container) bool {
 	return false
 }
 
-func getContainers(ctx context.Context, cli *client.Client, filterByLabel bool, checkStoppedContainers bool) ([]types.Container, error) {
+func getContainers(ctx context.Context, cli *client.Client, filterByLabel bool, checkStoppedContainers bool) ([]container.Summary, error) {
 	args := filters.NewArgs()
 	if filterByLabel {
 		args.Add("label", fmt.Sprintf("%v=true", containerLabel))
@@ -132,7 +131,7 @@ func getContainers(ctx context.Context, cli *client.Client, filterByLabel bool, 
 	})
 }
 
-func isHealthy(ctx context.Context, cli *client.Client, c types.Container, conf config) bool {
+func isHealthy(ctx context.Context, cli *client.Client, c container.Summary, conf config) bool {
 	running := c.State == "running"
 
 	containerJSON, err := cli.ContainerInspect(ctx, c.ID)
@@ -145,17 +144,18 @@ func isHealthy(ctx context.Context, cli *client.Client, c types.Container, conf 
 		}
 		// A stopped container is considered healthy only if its exit code is 0.
 		return containerJSON.State.ExitCode == 0
-	} else if err != nil {
+	}
+
+	if err != nil {
 		return running
 	}
 
 	health := containerJSON.State.Health
-	if health == nil || health.Status == types.NoHealthcheck || health.Status == types.Starting {
+	if health == nil || health.Status == container.NoHealthcheck || health.Status == container.Starting {
 		return running
 	}
 
-	healthy := health.Status == types.Healthy
-	return healthy
+	return health.Status == container.Healthy
 }
 
 func getConfig() config {
@@ -237,9 +237,9 @@ func getEnv(key string, fallback string, trim bool) string {
 }
 
 func getDockerClient() *client.Client {
-	cli, err := client.NewEnvClient()
+	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
-		println("Error getting Docker Client, exiting...")
+		fmt.Println("Error getting Docker Client, exiting...")
 		panic(err)
 	}
 
